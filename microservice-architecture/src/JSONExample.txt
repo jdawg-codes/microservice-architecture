@@ -1,0 +1,77 @@
+//for individual services
+
+//request
+{
+	\"method\": \"get\",
+	\"entity\": \"University\",
+	\"fields\": [\"name\"],
+	\"conditions\": {
+		\"name\": {\"operator\":\"contains\",\"value\":\"Tech\"}	
+	},
+	\"limit\": 20,
+	\"offset\": 0
+}
+
+//response
+{
+	\"status\": 200,
+	\"message\": \"OK\",
+	\"entity\":\"University\",
+	\"results\": {
+		\"data\":[
+			{\"name\": \"Michigan Tech\"}
+		] 
+	}
+}
+
+//request
+{
+	\"method\": \"post\",
+	\"entity\": \"University\",
+	\"attributes\": {\"name\":\"Michigan Tech\"}
+}
+
+{\"method\": \"post\",\"type\": \"entity\",\"entity\": \"University\",\"attributes\": {\"name\":\"Michigan Tech\"}}
+
+//response
+{
+	\"entity\":\"University\",
+	\"status\": 201,
+	\"message\": \"Created\",
+	\"id\": \"asdfwer\"
+}
+
+{\"status\":201,\"message\":\"Created\",\"id\": \"asdfwer\"}
+
+//request
+{
+	\"method\": \"put\",
+	\"entity\": \"University\",
+	\"attributes\": {\"name\":\"Michigan Technological University\"},
+	\"conditions\": {
+		\"id\": {\"operator\":\"equals\",\"value\":123}
+	}						
+}
+
+//response
+{
+	\"entity\":\"University\",
+	\"status\": 200,
+	\"message\": \"Updated\"
+}
+
+//request
+{
+	\"method\": \"delete\",
+	\"entity\":	\"University\"
+	\"conditions\": {
+		\"id\": {\"operator\":\"equals\",\"value\":123}
+	}
+}
+
+//response
+{
+	\"entity\":\"University\",
+	\"status\": 200,
+	\"message\": \"Deleted\"
+}
