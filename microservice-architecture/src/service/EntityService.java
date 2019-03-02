@@ -90,7 +90,7 @@ public class EntityService implements iInputBoundary {
 			}
 		} catch(Exception e) {
 			this.gateway.disconnect();
-			this.error.add("Failed to perform the requested command.");
+			this.error.add("The request returned a null response.");
 			return this.presenter;
 		}
 		
@@ -141,7 +141,7 @@ public class EntityService implements iInputBoundary {
 			}
 		} catch(Exception e) {
 			this.gateway.disconnect();
-			this.error.add("Failed to perform the requested command.");
+			this.error.add("The request returned a null response.");
 			return this.presenter;
 		}
 		
@@ -176,7 +176,7 @@ public class EntityService implements iInputBoundary {
 			}
 		} catch(Exception e) {
 			this.gateway.disconnect();
-			this.error.add("Failed to perform the requested command.");
+			this.error.add("The request returned a null response.");
 			return this.presenter;
 		}
 				
@@ -208,7 +208,7 @@ public class EntityService implements iInputBoundary {
 			}
 		} catch(Exception e) {
 			this.gateway.disconnect();
-			this.error.add("Failed to perform the requested command.");
+			this.error.add("The request returned a null response.");
 			return this.presenter;
 		}
 						

@@ -17,8 +17,13 @@ import boundary.iRequest;
 import entity.iEntity;
 import tool.ErrorContainer;
 import tool.iDependencyContainer;
+import tool.query.QueryCondition;
+import tool.query.QueryConditionGroup;
+import tool.query.iQuery;
+import tool.query.mysql.MySQLCreateQueryBuilder;
+import tool.query.mysql.MySQLReadQueryBuilder;
 
-public class MySQLGateway implements iEntityGateway {
+public class MySQLGateway extends EntityGateway {
 	private ErrorContainer<String> error;
 	private iDependencyContainer dependencies;
 	private Properties connectionDetails;
@@ -78,7 +83,7 @@ public class MySQLGateway implements iEntityGateway {
 		try {
 			methodName = (String) this.request.get("method");
 		} catch(Exception e) {			
-			this.error.add("Please ensure your entity request possesses a 'method' attribute with accepted values (e.g., post, get, put, delete).");
+			this.error.add("Please ensure your request possesses a 'method' attribute with accepted values (e.g., post, get, put, delete).");
 			return null;
 		}
 		
@@ -223,6 +228,28 @@ public class MySQLGateway implements iEntityGateway {
 	}
 	
 	public Collection<Map<String,Object>> select() {
+		if(this.attributesExist((ArrayList<String>) this.request.get("fields"))) {
+			
+		}
+		
+		
+		QueryConditionGroup conditionGroup = new QueryConditionGroup();
+		
+		Map<String,Object> conditions = (Map<String, Object>) this.request.get("conditions");
+		
+		if(conditions != null) {
+			//conditionGroup.add(new QueryCondition());
+		}
+		
+		iQuery query = MySQLReadQueryBuilder.query()
+				.createNew(this.request.get("entity").toString())
+				.returnFields((ArrayList<String>) this.request.get("fields"))
+				.returnBatch(1)
+				.withBatchSize(20)
+				.build();
+		
+		System.out.println("query builder string = " + query.toString());
+		
 		this.queryString = "SELECT ";
 		
 		ArrayList<String> fieldNamesArray = new ArrayList<String>();
@@ -254,9 +281,7 @@ public class MySQLGateway implements iEntityGateway {
 				this.queryString += " * ";
 			}
 			
-			this.queryString += " FROM " + this.request.get("entity").toString();
-			
-			Map<String,Object> conditions = (Map<String, Object>) this.request.get("conditions");
+			this.queryString += " FROM " + this.request.get("entity").toString();			
 			
 			if(conditions != null) {
 				this.queryString += " WHERE ";

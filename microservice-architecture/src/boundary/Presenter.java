@@ -29,7 +29,7 @@ public class Presenter implements iOutputBoundary {
 		ErrorContainer<String> errors = (ErrorContainer<String>) this.dependencies.get("error");
 		
 		if(this.response == null) {
-			errors.add("An error occurred during processing, resulting in an empty response.");
+			errors.add("An error occurred during processing resulting in an empty response.");
 		}
 		
 		if(!errors.isEmpty()) {
