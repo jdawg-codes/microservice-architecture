@@ -9,5 +9,4 @@ public interface iGateway {
 	public void connect();
 	public void disconnect();
 	public Map<String,Object> execute();
-	public boolean attributesExist(List<String> attributes);
 }

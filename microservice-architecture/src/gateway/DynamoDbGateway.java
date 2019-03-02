@@ -14,7 +14,7 @@ import com.amazonaws.services.dynamodbv2.document.Table;
 
 import boundary.iRequest;
 
-public class DynamoDbGateway implements iEntityGateway {
+public class DynamoDbGateway extends EntityGateway {
 	private AmazonDynamoDB connection;
 	private iDependencyContainer dependencies;
 	private iRequest request;

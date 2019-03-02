@@ -24,13 +24,9 @@ import tool.query.mysql.MySQLCreateQueryBuilder;
 import tool.query.mysql.MySQLReadQueryBuilder;
 
 public class MySQLGateway extends EntityGateway {
-	private ErrorContainer<String> error;
-	private iDependencyContainer dependencies;
 	private Properties connectionDetails;
 	private iRequest request;
-	private iEntity entity;
 	private Connection connection;
-	
 	private String queryString;
 	
 	public MySQLGateway(iDependencyContainer dependencies, Properties connectionDetails) {
@@ -228,16 +224,24 @@ public class MySQLGateway extends EntityGateway {
 	}
 	
 	public Collection<Map<String,Object>> select() {
-		if(this.attributesExist((ArrayList<String>) this.request.get("fields"))) {
-			
-		}
-		
-		
-		QueryConditionGroup conditionGroup = new QueryConditionGroup();
-		
 		Map<String,Object> conditions = (Map<String, Object>) this.request.get("conditions");
 		
-		if(conditions != null) {
+		List<String> attributesFromFields = (ArrayList<String>) this.request.get("fields");
+		List<String> attributesFromConditions = new ArrayList<String>(conditions.keySet());
+		
+		//collect all fields sent by user in request to validate their existence in the entity
+		List<String> allAttributes = new ArrayList<String>();
+		allAttributes.addAll(attributesFromFields);
+		allAttributes.addAll(attributesFromConditions);
+		
+		//validate that fields in request actually exist in entity to prevent injection attacks
+		if(!this.hasAttributes(allAttributes)) {
+			return null;
+		}
+				
+		QueryConditionGroup conditionGroup = new QueryConditionGroup();		
+		
+		if(conditions != null) {			
 			//conditionGroup.add(new QueryCondition());
 		}
 		
