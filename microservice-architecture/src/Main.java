@@ -7,8 +7,8 @@ import boundary.Presenter;
 import boundary.iOutputBoundary;
 import boundary.iRequest;
 import boundary.iResponse;
-import gateway.MySQLGateway;
 import gateway.iGateway;
+import gateway.mysql.MySQLGateway;
 import tool.DependencyContainer;
 import tool.ErrorContainer;
 

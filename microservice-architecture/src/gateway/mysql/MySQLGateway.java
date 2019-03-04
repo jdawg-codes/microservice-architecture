@@ -1,4 +1,4 @@
-package gateway;
+package gateway.mysql;
 
 import java.lang.reflect.Method;
 import java.sql.Connection;
@@ -15,17 +15,19 @@ import java.util.Properties;
 
 import boundary.iRequest;
 import entity.iEntity;
+import gateway.EntityGateway;
+import gateway.iEntityGateway;
 import tool.ErrorContainer;
 import tool.iDependencyContainer;
 import tool.query.QueryCondition;
 import tool.query.QueryConditionGroup;
 import tool.query.iQuery;
-import tool.query.mysql.MySQLCreateQueryBuilder;
+import tool.query.iQueryCondition;
+import tool.query.iQueryParameter;
 import tool.query.mysql.MySQLReadQueryBuilder;
 
 public class MySQLGateway extends EntityGateway {
 	private Properties connectionDetails;
-	private iRequest request;
 	private Connection connection;
 	private String queryString;
 	
@@ -37,8 +39,8 @@ public class MySQLGateway extends EntityGateway {
 		this.request = (iRequest) dependencies.get("request");
 	}
 	
-	public void entity(iEntity entity) {
-		this.entity = entity;
+	public Connection connection() {
+		return this.connection;
 	}
 	
 	@Override
@@ -86,10 +88,8 @@ public class MySQLGateway extends EntityGateway {
 		if(methodName.equals("post")) {
 			return this.insert();
 		} else if(methodName.equals("get")) {
-			Map<String,Object> resultsMap = new HashMap<String,Object>();			
-			resultsMap.put("data", this.select());
-						
-			return resultsMap;
+			iEntityGateway selectGateway = new MySQLSelectGateway(this);			  
+			return selectGateway.execute();
 		} else if(methodName.equals("put")) {
 			return this.update();
 		} else if(methodName.equals("delete")) {
@@ -100,7 +100,7 @@ public class MySQLGateway extends EntityGateway {
 		}
 	}
 
-	public Map<String,Object> insert() {
+	private Map<String,Object> insert() {
 		this.queryString = "";
 		
 		ArrayList<String> fieldNamesArray = new ArrayList<String>();
@@ -223,166 +223,91 @@ public class MySQLGateway extends EntityGateway {
 		return null;		
 	}
 	
-	public Collection<Map<String,Object>> select() {
-		Map<String,Object> conditions = (Map<String, Object>) this.request.get("conditions");
-		
-		List<String> attributesFromFields = (ArrayList<String>) this.request.get("fields");
-		List<String> attributesFromConditions = new ArrayList<String>(conditions.keySet());
-		
-		//collect all fields sent by user in request to validate their existence in the entity
-		List<String> allAttributes = new ArrayList<String>();
-		allAttributes.addAll(attributesFromFields);
-		allAttributes.addAll(attributesFromConditions);
-		
-		//validate that fields in request actually exist in entity to prevent injection attacks
-		if(!this.hasAttributes(allAttributes)) {
-			return null;
-		}
-				
-		QueryConditionGroup conditionGroup = new QueryConditionGroup();		
-		
-		if(conditions != null) {			
-			//conditionGroup.add(new QueryCondition());
-		}
-		
-		iQuery query = MySQLReadQueryBuilder.query()
-				.createNew(this.request.get("entity").toString())
-				.returnFields((ArrayList<String>) this.request.get("fields"))
-				.returnBatch(1)
-				.withBatchSize(20)
-				.build();
-		
-		System.out.println("query builder string = " + query.toString());
-		
-		this.queryString = "SELECT ";
-		
-		ArrayList<String> fieldNamesArray = new ArrayList<String>();
-		ArrayList<Object> fieldValuesArray = new ArrayList<Object>();
-		
-		ArrayList<Integer> containsArray = new ArrayList<Integer>();  
+	private Collection<Map<String,Object>> select() {
+		iQuery query;		
+		Map<String,Object> userConditions = (Map<String, Object>) this.request.get("conditions");
 
-		//build parameterized query string
 		try {
-			ArrayList<String> fields = (ArrayList<String>) this.request.get("fields");
+			//collect all fields sent by user in request to validate their existence in the entity
+			List<String> attributesFromFields = (ArrayList<String>) this.request.get("fields");
+			List<String> attributesFromConditions = new ArrayList<String>(userConditions.keySet());			
+
+			//TODO remove duplicates to reduce validation time
+			List<String> allAttributes = new ArrayList<String>();			
 			
-			if(fields != null) {
-				int iteration = 0;
-				
-				for(String field : fields) {
-					if(this.entity.hasAttribute(field)) {
-						if(iteration>0) {
-							this.queryString += ", ";
-						}
-						
-						this.queryString += "`" + field + "`";
-						
-						iteration++;
-					} else {
-						this.error.add("The requested entity does not have a field called: " + field);
-					}
-				}
-			} else {
-				this.queryString += " * ";
-			}
+			if(attributesFromFields!=null) {
+				allAttributes.addAll(attributesFromFields); }
 			
-			this.queryString += " FROM " + this.request.get("entity").toString();			
-			
-			if(conditions != null) {
-				this.queryString += " WHERE ";
-				
-				conditions.forEach((k,v) -> {
-					this.queryString += "`" + k + "`";
+			if(attributesFromConditions!=null) {
+				allAttributes.addAll(attributesFromConditions); }
+
+			//validate that fields in request actually exist in entity to prevent injection attacks
+			if(!this.hasAttributes(allAttributes)) {
+				return null; }
+	
+			QueryConditionGroup conditionGroup = new QueryConditionGroup();		
+
+			//convert user request conditions to QueryConditions and add to conditionGroup
+			if(userConditions != null) {
+				for(String userCondition : userConditions.keySet()) {
+					Map<String,Object> userConditionObject = 
+							((Map<String,Object>) userConditions.get(userCondition));
 					
-					if(((Map<String, Object>) v).get("operator").equals("equals")) {
-						this.queryString += "=? ";
-						
-						fieldNamesArray.add(k.toString());
-						fieldValuesArray.add(((Object) ((Map<String, Object>) v).get("value")));
-					}
-					else if(((Map<String, Object>) v).get("operator").equals("contains")) {
-						this.queryString += " LIKE ? ";
-						fieldNamesArray.add(k.toString());
-						fieldValuesArray.add(((Object) ((Map<String, Object>) v).get("value")));
-						
-						containsArray.add(fieldNamesArray.size()-1, fieldNamesArray.size()-1);
-					} 
-				});
-			}
+					//get data type of entity attribute
+					Method method;
+					
+					try {
+						method = this.entity.getClass().getMethod(userCondition);
+					} catch (NullPointerException | NoSuchMethodException | SecurityException e) {
+						this.disconnect();
+						this.error.add("The request contained an entity attribute that does not exist.");
+						return null;}
+					
+					iQueryCondition condition = new QueryCondition(
+							(String) userCondition,
+							(String) userConditionObject.get("operator"),
+							(Object) userConditionObject.get("value"),
+							(String) method.getReturnType().toString());
+										
+					conditionGroup.add(condition); } }
 			
-			Integer limit = (Integer) this.request.get("limit");
-			Integer offset = (Integer) this.request.get("offset");
+			query = MySQLReadQueryBuilder.query()
+					.createNew(this.request.get("entity").toString())
+					.returnFields((ArrayList<String>) this.request.get("fields"))
+					.withConditions(conditionGroup)
+					.returnBatch(1)
+					.withBatchSize(20)
+					.build();
 			
-			if(limit==null) {
-				limit = 20;
 				
-				this.queryString += " LIMIT " + limit;
-				
-				if(offset!=null) {
-					this.queryString += " OFFSET " + offset;
-				}
-			}
-				
-			System.out.println("query string: "+this.queryString); 
-			//TODO remove after testing
 		} catch(Exception e) {
 			this.disconnect();
 			this.error.add("Failed to build the requested query.");
-			return null;
-		}
+			return null; }
+		
+		System.out.println(query.toString());
 		
 		//Parameterize query
 		PreparedStatement statement = null;
 		
 		try {
-			statement = this.connection.prepareStatement(this.queryString);
-						
-			int parameterIteration = 1;
-						
-			for(int i=0; i<fieldNamesArray.size(); i++) {
-				String fieldName = fieldNamesArray.get(i);
+			statement = this.connection.prepareStatement(query.toString());
+			
+			for(int i=0; i<query.parameters().size(); i++) {
+				iQueryParameter parameter = query.parameters().get(i);
 				
-				Method method;
-				
-				try {
-					method = this.entity.getClass().getMethod(fieldName);
-				} catch (NullPointerException | NoSuchMethodException | SecurityException e) {
-					this.disconnect();
-					this.error.add("The request contained an entity attribute that does not exist.");
-					return null;
-				}
-				
-				String fieldType = method.getReturnType().toString();
-				
-				if(fieldType.equals("class java.lang.String")) {
-					//System.out.println("String is: "+fieldValuesArray.get(i).toString());
-					String parameterValue = fieldValuesArray.get(i).toString();
-					
-					try {
-						if(containsArray.get(i)!=null) {
-							parameterValue = "%" + parameterValue + "%";
-							statement.setString(parameterIteration, parameterValue);
-						}
-					} catch(IndexOutOfBoundsException e) {
-						statement.setString(parameterIteration, parameterValue);
-					}					
-				} 
-				else if(fieldType.equals("int")) {
-					//System.out.println("Integer is: " + (int) fieldValuesArray.get(i));
-					statement.setInt(parameterIteration, (int) fieldValuesArray.get(i)); } 
+				if(parameter.dataType().equals("String")) {
+					statement.setString(i+1, (String) parameter.value()); }
+				else if(parameter.dataType().equals("Integer")) {
+					statement.setInt(i+1, (int) parameter.value()); }
 				else {
 					this.disconnect();
-					this.error.add("The data type for attribute " + fieldName + " is not currently supported.");
-					return null;
-				}
-				//TODO add other data types					
-			
-				parameterIteration++;
-			}
+					this.error.add("The data type for attribute " + parameter.name() + " is not currently supported.");
+					return null; } }
 		} catch (SQLException e) {
 			this.error.add("Experienced a database error. Please try again.");
 			this.disconnect();
-			return null;
-		}
+			return null; }
 		
 		//execute query
 		try {
@@ -400,23 +325,20 @@ public class MySQLGateway extends EntityGateway {
 					String columnName = results.getMetaData().getColumnName(i);
 					Object value = results.getObject(i);
 					
-					resultMap.put(columnName, value);
-				}
+					resultMap.put(columnName, value); }
 				
-				resultArray.add(resultMap);
-			}
+				resultArray.add(resultMap); }
 			
 			this.disconnect();				
 			return resultArray;
 		} catch (SQLException e) {
-			this.error.add("Failed to execute the database request.");
-		}
+			this.error.add("Failed to execute the entity request."); }
 		
 		this.disconnect();			
 		return null;
 	}
 	
-	public Map<String,Object> update() {
+	private Map<String,Object> update() {
 		String queryString = "UPDATE " + this.request.get("entity").toString() + " SET ";
 		
 		ArrayList<String> fieldNamesArray = new ArrayList<String>();
@@ -432,8 +354,7 @@ public class MySQLGateway extends EntityGateway {
 			for(String fieldName: fieldNames) {						
 				if(attributes.get(fieldName)!=null && !fieldName.equals("id")) {	
 					if(iteration>0) {
-						queryString += ",";
-					}
+						queryString += ","; }
 											
 					fieldNamesArray.add(fieldName);
 					fieldValuesArray.add(attributes.get(fieldName));
@@ -515,7 +436,7 @@ public class MySQLGateway extends EntityGateway {
 		return null;
 	}
 	
-	public Map<String,Object> delete() {
+	private Map<String,Object> delete() {
 		String queryString = "DELETE FROM " + this.request.get("entity").toString();
 		
 		ArrayList<String> fieldNamesArray = new ArrayList<String>();

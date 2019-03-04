@@ -1,31 +1,38 @@
 package tool.query;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class QueryConditionGroup implements iQueryConditionGroup {
-
+	private String operator = "AND"; //default grouping operator is AND
+	private List<iQueryCondition> conditions = new ArrayList<iQueryCondition>();
+		
+	public QueryConditionGroup(String operator) {
+		this.operator = operator;
+	}
+	
+	public QueryConditionGroup() {
+	
+	}
+	
 	@Override
 	public List<iQueryCondition> conditions() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.conditions;
 	}
 
 	@Override
 	public void add(iQueryCondition condition) {
-		// TODO Auto-generated method stub
-		
+		this.conditions.add(condition);
 	}
 
 	@Override
 	public String operator() {
-		// TODO Auto-generated method stub
-		return null;
+		return this.operator;
 	}
 
 	@Override
 	public void operator(String operator) {
-		// TODO Auto-generated method stub
-		
+		this.operator = operator;
 	}
 
 }

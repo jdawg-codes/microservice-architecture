@@ -1,11 +1,12 @@
 package tool.query;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public abstract class Query implements iQuery {
 	protected String queryString;
-	protected Map<String,iQueryParameter> parameters;
+	protected List<iQueryParameter> parameters = new ArrayList<iQueryParameter>();
 	
 	protected String tableName;
 	protected List<String> returnFields;
@@ -122,5 +123,10 @@ public abstract class Query implements iQuery {
 	
 	public String toString() {
 		return this.queryString;
+	}
+	
+	@Override
+	public List<iQueryParameter> parameters() {
+		return this.parameters;
 	}
 }

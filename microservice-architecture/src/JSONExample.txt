@@ -28,7 +28,7 @@
 {
 	\"method\": \"post\",
 	\"entity\": \"University\",
-	\"attributes\": {\"name\":\"Michigan Tech\"}
+	\"data\": {\"name\":\"Michigan Tech\"}
 }
 
 {\"method\": \"post\",\"type\": \"entity\",\"entity\": \"University\",\"attributes\": {\"name\":\"Michigan Tech\"}}
@@ -47,7 +47,7 @@
 {
 	\"method\": \"put\",
 	\"entity\": \"University\",
-	\"attributes\": {\"name\":\"Michigan Technological University\"},
+	\"data\": {\"name\":\"Michigan Technological University\"},
 	\"conditions\": {
 		\"id\": {\"operator\":\"equals\",\"value\":123}
 	}						

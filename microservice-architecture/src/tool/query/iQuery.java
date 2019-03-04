@@ -27,6 +27,7 @@ public interface iQuery {
 	
 	//shared by many type of queries
 	public iQuery withConditions(iQueryConditionGroup conditions);
+	public List<iQueryParameter> parameters();
 	
 	//execute build
 	public iQuery build();

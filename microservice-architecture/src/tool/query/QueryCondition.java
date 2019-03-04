@@ -13,14 +13,20 @@ public class QueryCondition implements iQueryCondition {
 		this.field = field;
 		this.operator = operator;
 		this.values = values;
-		this.dataType = dataType;
+		
+		prepareDataType(dataType);
 	}
 	
 	public QueryCondition(String field, String operator, Object value, String dataType) {
 		this.field = field;
 		this.operator = operator;
 		this.value = value;
-		this.dataType = dataType;
+		
+		prepareDataType(dataType);
+	}
+	
+	public QueryCondition() {
+		
 	}
 		
 	@Override
@@ -29,8 +35,10 @@ public class QueryCondition implements iQueryCondition {
 	}
 
 	@Override
-	public void field(String field) {
+	public iQueryCondition field(String field) {
 		this.field = field;
+		
+		return this;
 	}
 
 	@Override
@@ -39,8 +47,10 @@ public class QueryCondition implements iQueryCondition {
 	}
 
 	@Override
-	public void operator(String operator) {
+	public iQueryCondition operator(String operator) {
 		this.operator = operator;
+		
+		return this;
 	}
 
 	@Override
@@ -49,8 +59,10 @@ public class QueryCondition implements iQueryCondition {
 	}
 
 	@Override
-	public void value(Object value) {
+	public iQueryCondition value(Object value) {
 		this.value = value;
+		
+		return this;
 	}
 
 	@Override
@@ -59,8 +71,10 @@ public class QueryCondition implements iQueryCondition {
 	}
 
 	@Override
-	public void values(List<Object> values) {
+	public iQueryCondition values(List<Object> values) {
 		this.values = values;
+		
+		return this;
 	}
 
 	@Override
@@ -69,8 +83,19 @@ public class QueryCondition implements iQueryCondition {
 	}
 
 	@Override
-	public void dataType(String dataType) {
-		this.dataType = dataType;
+	public iQueryCondition dataType(String dataType) {
+		prepareDataType(dataType);
+		
+		return this;
 	}
 
+	private void prepareDataType(String dataType) {
+		if(dataType.equals("class java.lang.String")) {
+			this.dataType = "String";
+		} else if(dataType.equals("int")) {
+			this.dataType = "Integer";
+		} else {
+			this.dataType = "String";
+		}
+	}
 }
